@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chokepoint Resilience Framework</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0d2430;
+    --ink-soft:#173948;
+    --paper:#eef2f2;
+    --panel:#ffffff;
+    --line:#c9d3d2;
+    --text-muted:#5b6b70;
+    --copper:#a85a2d;
+    --copper-bg:#f3e3d8;
+    --amber:#a9822f;
+    --amber-bg:#f3ecd8;
+    --teal:#2f7166;
+    --teal-bg:#dcece8;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter',system-ui,sans-serif;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:960px;margin:0 auto;padding:56px 24px 80px;}
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--copper);
+    margin-bottom:14px;
+  }
+  h1{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:clamp(28px,4.4vw,44px);
+    line-height:1.08;
+    margin:0 0 16px;
+    max-width:15ch;
+  }
+  .lede{
+    font-size:16px;
+    color:var(--text-muted);
+    max-width:56ch;
+    margin:0 0 44px;
+  }
+
+  /* route form */
+  .route-form{
+    display:flex;
+    align-items:flex-end;
+    gap:16px;
+    flex-wrap:wrap;
+    margin-bottom:36px;
+    padding:24px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+  }
+  .field{display:flex;flex-direction:column;gap:6px;flex:1;min-width:180px;}
+  .field label{
+    font-size:11.5px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--text-muted);
+    font-weight:600;
+  }
+  .field select{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:14px;
+    padding:10px 12px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    background:var(--paper);
+    color:var(--ink);
+    cursor:pointer;
+  }
+  .field select:focus-visible{outline:2px solid var(--copper);outline-offset:2px;}
+  .arrow-sep{
+    font-size:18px;
+    color:var(--text-muted);
+    padding-bottom:10px;
+  }
+  .assess-btn{
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:14px;
+    padding:11px 22px;
+    background:var(--ink);
+    color:#fff;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+    transition:background .15s ease;
+  }
+  .assess-btn:hover{background:var(--ink-soft);}
+  .assess-btn:focus-visible{outline:2px solid var(--copper);outline-offset:2px;}
+  @media (max-width:640px){
+    .route-form{flex-direction:column;align-items:stretch;}
+    .arrow-sep{display:none;}
+    .assess-btn{width:100%;}
+  }
+
+  .placeholder{color:var(--text-muted);font-size:14.5px;margin:0;}
+
+  .route-path{
+    display:flex;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-bottom:28px;
+  }
+  .route-node{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12.5px;
+    padding:6px 12px;
+    border-radius:999px;
+    background:var(--teal-bg);
+    color:var(--teal);
+    font-weight:500;
+  }
+  .route-node.origin, .route-node.dest{
+    background:var(--ink);
+    color:#fff;
+  }
+  .route-chevron{color:var(--text-muted);font-size:14px;}
+
+  .no-chokepoint{
+    background:var(--teal-bg);
+    color:var(--ink-soft);
+    padding:16px 18px;
+    border-radius:10px;
+    font-size:14.5px;
+    margin-bottom:8px;
+  }
+
+  .stop{
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:24px;
+    margin-bottom:20px;
+  }
+  .stop:last-child{margin-bottom:0;}
+  .stop-name{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:20px;
+    margin:0 0 4px;
+  }
+  .stop-stat{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    color:var(--text-muted);
+    margin-bottom:16px;
+  }
+
+  .map-wrap{
+    background:var(--ink);
+    border-radius:12px;
+    padding:16px;
+    margin-bottom:24px;
+    overflow:hidden;
+  }
+  .map-wrap svg{width:100%;height:auto;display:block;}
+  .land{fill:#1c3a46;stroke:#0d2430;stroke-width:0.5;}
+  .graticule{fill:none;stroke:#16323d;stroke-width:0.6;}
+  .map-label{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10.5px;
+    fill:#c7d6d3;
+    pointer-events:none;
+  }
+  .map-label.strong{fill:#fff;font-weight:500;font-size:11px;}
+  .map-loading{fill:#c7d6d3;font-family:'IBM Plex Mono',monospace;font-size:12px;}
+
+  /* route bar */
+  .route{
+    position:relative;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    margin:0 0 40px;
+    padding:0 4px;
+  }
+  .route::before{
+    content:"";
+    position:absolute;
+    top:9px;
+    left:14px;
+    right:14px;
+    height:2px;
+    background:var(--line);
+  }
+  .port{
+    position:relative;
+    background:none;
+    border:none;
+    cursor:pointer;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:10px;
+    padding:0;
+    font-family:inherit;
+    color:var(--ink);
+    flex:1;
+  }
+  .port:focus-visible{outline:2px solid var(--copper);outline-offset:4px;border-radius:6px;}
+  .dot{
+    width:18px;height:18px;border-radius:50%;
+    background:var(--panel);
+    border:2px solid var(--line);
+    transition:transform .18s ease, border-color .18s ease, background .18s ease;
+  }
+  .port[aria-pressed="true"] .dot{
+    background:var(--copper);
+    border-color:var(--copper);
+    transform:scale(1.15);
+  }
+  .port-label{
+    font-size:12.5px;
+    font-weight:500;
+    text-align:center;
+    max-width:96px;
+    color:var(--text-muted);
+    transition:color .18s ease;
+  }
+  .port[aria-pressed="true"] .port-label{color:var(--ink);font-weight:600;}
+  @media (max-width:640px){
+    .route{flex-wrap:wrap;row-gap:24px;}
+    .route::before{display:none;}
+    .port{flex:0 0 30%;}
+  }
+
+  /* panel */
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:36px;
+  }
+  .panel-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    flex-wrap:wrap;
+    gap:10px 24px;
+    border-bottom:1px solid var(--line);
+    padding-bottom:20px;
+    margin-bottom:26px;
+  }
+  .panel-title{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:26px;
+    margin:0;
+  }
+  .panel-stat{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:13px;
+    color:var(--text-muted);
+    text-align:right;
+  }
+  .panel-stat b{color:var(--ink);font-size:15px;}
+
+  h3.section-h{
+    font-size:12px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--text-muted);
+    margin:0 0 14px;
+    font-weight:600;
+  }
+
+  .hazard-row{
+    display:grid;
+    grid-template-columns:150px 70px 1fr;
+    gap:16px;
+    align-items:start;
+    padding:12px 0;
+    border-bottom:1px solid #eef0ef;
+  }
+  .hazard-row:last-child{border-bottom:none;}
+  .hazard-name{font-weight:500;font-size:14.5px;padding-top:2px;}
+  .pill{
+    display:inline-block;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    font-weight:500;
+    letter-spacing:.02em;
+    padding:3px 9px;
+    border-radius:999px;
+    white-space:nowrap;
+    height:fit-content;
+  }
+  .pill.high{background:var(--copper-bg);color:var(--copper);}
+  .pill.medium{background:var(--amber-bg);color:var(--amber);}
+  .pill.low{background:var(--teal-bg);color:var(--teal);}
+  .hazard-note{font-size:14px;color:var(--text-muted);padding-top:2px;}
+
+  .twocol{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin:28px 0;}
+  @media (max-width:640px){.twocol{grid-template-columns:1fr;}}
+  .metric-label{font-size:12px;color:var(--text-muted);margin-bottom:4px;}
+  .metric-value{font-size:15px;line-height:1.5;}
+
+  ul.reco{margin:0;padding:0;list-style:none;}
+  ul.reco li{
+    position:relative;
+    padding:0 0 0 22px;
+    margin-bottom:12px;
+    font-size:14.5px;
+    line-height:1.55;
+  }
+  ul.reco li::before{
+    content:"";
+    position:absolute;
+    left:0;top:8px;
+    width:8px;height:8px;
+    border-radius:50%;
+    background:var(--teal);
+  }
+
+  .foot{
+    margin-top:28px;
+    font-size:12.5px;
+    color:var(--text-muted);
+    border-top:1px solid var(--line);
+    padding-top:16px;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none !important;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="eyebrow">Thesis tool — chokepoint resilience framework</div>
+  <h1>Where the world's oil is most exposed</h1>
+  <p class="lede">Choose an origin and destination country to see which of the five chokepoints studied in this thesis lie on that route, and the resilience strategies the framework suggests for it.</p>
+
+  <div class="route-form">
+    <div class="field">
+      <label for="fromSelect">From (exporter)</label>
+      <select id="fromSelect"></select>
+    </div>
+    <div class="arrow-sep" aria-hidden="true">&#8594;</div>
+    <div class="field">
+      <label for="toSelect">To (importer)</label>
+      <select id="toSelect"></select>
+    </div>
+    <button id="assessBtn" class="assess-btn">Assess route</button>
+  </div>
+
+  <div class="map-wrap">
+    <svg id="mapSvg" viewBox="0 0 900 460" role="img" aria-label="World map showing the assessed shipping route"></svg>
+  </div>
+
+  <div class="panel" id="panel">
+    <p class="placeholder">Select an origin and destination, then choose "Assess route" to see the chokepoints on this path.</p>
+  </div>
+
+  <p class="foot">Routes are assigned using published maritime trade geography, not a live shipment-tracking feed. Recommendations are derived qualitatively from the literature reviewed in Chapter 2 and the framework in Section 2.9.</p>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
+<script>
+const data = [
+  {
+    id: "hormuz",
+    name: "Strait of Hormuz",
+    stat: "20.9M b/d",
+    statLabel: "1H25 transit volume",
+    hazards: [
+      { name: "Geopolitical & Security", level: "high", note: "Active conflict; traffic fell ~30% in Q1 2026" },
+      { name: "Sanctions & Trade Restriction", level: "low", note: "Not a primary sanctions-evasion corridor" },
+      { name: "Accidents & Operational", level: "medium", note: "High traffic density in a narrow strait" }
+    ],
+    criticality: "Very high — ~20% of global oil consumption and ~20% of LNG trade transit here.",
+    substitutability: "Low. The Petroline pipeline offers only a partial bypass of total volume.",
+    recos: [
+      "Expand Petroline (East–West Pipeline) throughput agreements — currently the only physical bypass of Hormuz, but it carries a fraction of strait volume.",
+      "Trigger coordinated IEA member reserve releases at defined disruption thresholds, rather than relying on unilateral national drawdowns.",
+      "Qatari and UAE LNG buyers should diversify contracts toward US Gulf Coast and Australian supply to cut single-route exposure.",
+      "Track Lloyd's Joint War Committee listed-area status for the Gulf to anticipate insurance and freight-cost shifts before they hit contracts."
+    ]
+  },
+  {
+    id: "malacca",
+    name: "Strait of Malacca",
+    stat: "23.2M b/d",
+    statLabel: "1H25 transit volume",
+    hazards: [
+      { name: "Geopolitical & Security", level: "low", note: "Limited direct conflict exposure" },
+      { name: "Sanctions & Trade Restriction", level: "low", note: "Not a significant evasion corridor" },
+      { name: "Accidents & Operational", level: "high", note: "Piracy incidents rose sharply in 1H25" }
+    ],
+    criticality: "Highest volume of any chokepoint studied — the primary artery for East Asian energy imports.",
+    substitutability: "Very low. The Sunda and Lombok Straits cannot absorb large-scale diversion.",
+    recos: [
+      "Expand joint patrols under the existing ReCAAP framework — incident data shows a 400% rise in piracy in 1H25, concentrated in this corridor.",
+      "China should continue its current SPR trajectory (1,541M barrels, Q1 2026) as the primary hedge against a corridor with no viable alternative route.",
+      "Japan and South Korea should pursue coordinated reserve-sharing arrangements, since neither holds reserves near China's scale despite comparable dependence.",
+      "Shipowners should require AIS transponder compliance and convoy-timing coordination through the highest-incident stretches identified by IMB/ReCAAP reporting."
+    ]
+  },
+  {
+    id: "babelmandeb",
+    name: "Bab el-Mandeb Strait",
+    stat: "4.2M b/d",
+    statLabel: "1H25 transit volume",
+    hazards: [
+      { name: "Geopolitical & Security", level: "high", note: "Sustained attacks on shipping since late 2023" },
+      { name: "Sanctions & Trade Restriction", level: "low", note: "Not a primary sanctions corridor" },
+      { name: "Accidents & Operational", level: "medium", note: "Elevated risk from vessel damage and rerouting" }
+    ],
+    criticality: "Medium-high — a critical link between Asian and European energy markets.",
+    substitutability: "Medium. The Cape of Good Hope route adds 10–14 days and meaningful cost.",
+    recos: [
+      "Carriers should pre-clear Cape of Good Hope rerouting authority in charter contracts, rather than negotiating diversion terms mid-crisis as Maersk and MSC did in 2023–24.",
+      "Sustain multinational naval coalition presence (in the pattern of Operation Prosperity Guardian) rather than relying on ad hoc single-nation escorts.",
+      "Monitor UKMTO and Joint War Committee advisories directly — Saudi loadings fell 36% in two weeks in July 2026 with limited advance signal in commercial channels.",
+      "Insurers should extend war-risk pooling across the Bab el-Mandeb–Suez corridor jointly, since disruption at one routinely displaces traffic to the other."
+    ]
+  },
+  {
+    id: "suez",
+    name: "Suez Canal",
+    stat: "4.9M b/d",
+    statLabel: "1H25 transit volume",
+    hazards: [
+      { name: "Geopolitical & Security", level: "medium", note: "Spillover risk from Bab el-Mandeb crisis" },
+      { name: "Sanctions & Trade Restriction", level: "low", note: "Not a sanctions-evasion corridor" },
+      { name: "Accidents & Operational", level: "high", note: "Ever Given (2021) remains the reference case" }
+    ],
+    criticality: "Medium-high — shortest route between the Indian Ocean and the Mediterranean.",
+    substitutability: "Medium. Cape of Good Hope route is viable but materially longer and costlier.",
+    recos: [
+      "Suez Canal Authority should maintain expanded tug and dredging capacity post-Ever Given, given the demonstrated single-vessel grounding risk.",
+      "Downstream shippers should hold larger inventory buffers on Asia–Europe routes — Tran et al. (2025) show blockage costs propagate through the network via inventory shortage, not just direct delay.",
+      "Track the current traffic rebound (Suez tanker volumes rose 28% in 2026 as Hormuz-displaced vessels rerouted here) as a leading indicator of cross-chokepoint congestion risk.",
+      "Coordinate convoy-size and vessel-class scheduling to reduce single-point grounding exposure in the narrowest single-lane sections."
+    ]
+  },
+  {
+    id: "danish",
+    name: "Danish Straits",
+    stat: "4.9M b/d",
+    statLabel: "1H25 transit volume",
+    hazards: [
+      { name: "Geopolitical & Security", level: "low", note: "Not a site of direct conflict" },
+      { name: "Sanctions & Trade Restriction", level: "high", note: "Primary corridor for shadow fleet activity" },
+      { name: "Accidents & Operational", level: "medium", note: "Ageing, poorly insured shadow fleet vessels" }
+    ],
+    criticality: "Medium — steadily rising volume, increasingly tied to sanctioned oil flows.",
+    substitutability: "Not applicable — the issue is regulatory evasion, not lack of a route.",
+    recos: [
+      "Expand Danish-style boarding and insurance-verification checks to all Baltic approach states, not just Denmark — 292 sanctioned-tanker transits occurred in 2025 alone.",
+      "Fast-track EU sanctions designation updates (as under the 20th package) to keep pace with reflagging, which open registries currently enable faster than enforcement can track.",
+      "Require proof of P&I Club (protection and indemnity) insurance as a condition of straits transit, targeting the segment of the ~1,300-vessel shadow fleet that carries no verifiable cover.",
+      "Coastal states should pre-position spill-response contingency assets specifically for ageing, uninsured tankers, given the elevated accident risk this fleet carries."
+    ]
+  }
+];
+
+// -- Countries and their maritime trade "region bucket" --
+const countries = [
+  { name: "Saudi Arabia", region: "gulf", role: "exporter" },
+  { name: "United Arab Emirates", region: "gulf", role: "exporter" },
+  { name: "Qatar", region: "gulf", role: "exporter" },
+  { name: "Kuwait", region: "gulf", role: "exporter" },
+  { name: "Iraq", region: "gulf", role: "exporter" },
+  { name: "Russia", region: "baltic", role: "exporter" },
+  { name: "Nigeria", region: "atlantic_africa", role: "exporter" },
+  { name: "United States", region: "atlantic_americas", role: "both" },
+  { name: "China", region: "east_asia", role: "importer" },
+  { name: "Japan", region: "east_asia", role: "importer" },
+  { name: "South Korea", region: "east_asia", role: "importer" },
+  { name: "India", region: "south_asia", role: "importer" },
+  { name: "Germany", region: "europe", role: "importer" },
+  { name: "Netherlands", region: "europe", role: "importer" },
+  { name: "France", region: "europe", role: "importer" }
+];
+
+// -- Region-pair to chokepoint-sequence rules (based on published maritime trade geography) --
+const routeRules = {
+  "gulf|east_asia":        { path: ["hormuz","malacca"], note: null },
+  "gulf|south_asia":       { path: ["hormuz"], note: "Arabian Sea crossing direct to South Asia; no second chokepoint in this study's scope." },
+  "gulf|europe":           { path: ["hormuz","babelmandeb","suez"], note: null },
+  "gulf|atlantic_americas":{ path: ["hormuz"], note: "Long trans-Atlantic leg follows; no further chokepoint in this study's scope." },
+  "baltic|europe":         { path: ["danish"], note: null },
+  "baltic|east_asia":      { path: ["danish"], note: "A growing share of shadow fleet cargo reroutes via the Cape of Good Hope rather than Suez to reduce inspection exposure (Atlantic Council, 2026)." },
+  "baltic|south_asia":     { path: ["danish"], note: "Typically continues via Cape of Good Hope, avoiding Suez inspection risk." },
+  "baltic|atlantic_americas": { path: ["danish"], note: null },
+  "atlantic_africa|europe":{ path: [], note: "No chokepoint from this study's five lies on this direct Atlantic route." },
+  "atlantic_africa|east_asia": { path: [], note: "Typically routed via the Cape of Good Hope; outside this study's five chokepoints." },
+  "atlantic_africa|south_asia": { path: [], note: "Typically routed via the Cape of Good Hope; outside this study's five chokepoints." },
+  "atlantic_americas|europe": { path: [], note: "Direct Atlantic crossing; no chokepoint from this study's five applies." },
+  "atlantic_americas|east_asia": { path: [], note: "Typically routed via the Panama Canal, which is outside this study's scope." },
+  "atlantic_americas|south_asia": { path: [], note: "Typically routed via the Suez Canal on an eastbound Atlantic–Mediterranean path." , override:["suez"]}
+};
+
+function getRoute(fromName, toName){
+  const from = countries.find(c => c.name === fromName);
+  const to = countries.find(c => c.name === toName);
+  if (!from || !to) return { path: [], note: "Select both an origin and a destination." };
+  if (from.name === to.name) return { path: [], note: "Origin and destination cannot be the same country." };
+  const key = from.region + "|" + to.region;
+  const rule = routeRules[key];
+  if (!rule) return { path: [], note: "No defined maritime route through this study's five chokepoints for this pair — likely routed via a chokepoint outside this thesis's scope." };
+  const path = rule.override || rule.path;
+  return { path, note: rule.note, fromLabel: from.name, toLabel: to.name };
+}
+
+// -- Real-world [longitude, latitude] positions of representative ports/chokepoints --
+const countryLL = {
+  "Saudi Arabia": [50.2, 26.7], "United Arab Emirates": [55.1, 25.0], "Qatar": [51.6, 25.9],
+  "Kuwait": [48.0, 29.0], "Iraq": [47.8, 30.0], "Russia": [28.6, 60.3], "Nigeria": [5.0, 6.0],
+  "United States": [-95.3, 29.7], "China": [121.5, 31.2], "Japan": [139.6, 35.4], "South Korea": [129.0, 35.1],
+  "India": [72.8, 19.0], "Germany": [8.1, 53.5], "Netherlands": [4.5, 51.9], "France": [0.1, 49.5]
+};
+const chokeLL = {
+  hormuz: [56.3, 26.5], malacca: [101.4, 2.5], babelmandeb: [43.4, 12.6], suez: [32.3, 30.6], danish: [12.6, 55.7]
+};
+
+let projection = null;
+const mapSvg = d3.select('#mapSvg');
+const MAP_W = 900, MAP_H = 460;
+
+mapSvg.append('text').attr('class','map-loading').attr('x', 20).attr('y', 30).text('Loading world map…');
+
+d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/land-110m.json').then(world => {
+  const land = topojson.feature(world, world.objects.land);
+  projection = d3.geoNaturalEarth1().fitExtent([[16,16],[MAP_W-16, MAP_H-16]], land);
+  const path = d3.geoPath(projection);
+
+  mapSvg.selectAll('*').remove();
+  mapSvg.append('path').attr('class','land').attr('d', path(land));
+  mapSvg.append('g').attr('id', 'routeLayer');
+
+  assessRoute(); // draw the default route now that the map is ready
+}).catch(() => {
+  mapSvg.selectAll('*').remove();
+  mapSvg.append('text').attr('class','map-loading').attr('x', 20).attr('y', 30)
+    .text('Map failed to load (offline?) — route assessment below still works.');
+});
+
+function updateMap(fromName, toName, pathIds){
+  if (!projection) return; // map not ready yet; assessRoute() will be re-called on load
+  const layer = mapSvg.select('#routeLayer');
+  layer.selectAll('*').remove();
+
+  const fromXY = projection(countryLL[fromName]);
+  const toXY = projection(countryLL[toName]);
+  const stopXY = [fromXY, ...pathIds.map(id => projection(chokeLL[id])), toXY];
+
+  layer.append('polyline')
+    .attr('points', stopXY.map(p => p.join(',')).join(' '))
+    .attr('fill','none').attr('stroke','#c7d6d3').attr('stroke-width',1.6).attr('stroke-dasharray','5,5');
+
+  // all chokepoints shown for context; active ones highlighted
+  Object.entries(chokeLL).forEach(([id, ll]) => {
+    const [x,y] = projection(ll);
+    const active = pathIds.includes(id);
+    layer.append('circle').attr('cx',x).attr('cy',y).attr('r', active?5:3)
+      .attr('fill', active ? '#b9793f' : '#3a5560')
+      .attr('stroke', active ? '#f3e3d8' : 'none').attr('stroke-width',2);
+    if (active){
+      const name = data.find(d => d.id === id).name;
+      layer.append('text').attr('class','map-label strong').attr('x', x+8).attr('y', y-8).text(name);
+    }
+  });
+
+  [[fromName, fromXY], [toName, toXY]].forEach(([name, xy]) => {
+    layer.append('circle').attr('cx', xy[0]).attr('cy', xy[1]).attr('r', 6).attr('fill', '#fff');
+    layer.append('text').attr('class','map-label strong').attr('x', xy[0]+9).attr('y', xy[1]+4).text(name);
+  });
+}
+
+const fromSelect = document.getElementById('fromSelect');
+const toSelect = document.getElementById('toSelect');
+const panelEl = document.getElementById('panel');
+const assessBtn = document.getElementById('assessBtn');
+
+function populateSelects(){
+  const exporters = countries.filter(c => c.role === "exporter" || c.role === "both");
+  const importers = countries.filter(c => c.role === "importer" || c.role === "both");
+  fromSelect.innerHTML = exporters.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+  toSelect.innerHTML = importers.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+  // default to a meaningful example
+  fromSelect.value = "Saudi Arabia";
+  toSelect.value = "China";
+}
+
+function levelLabel(l){
+  return l === 'high' ? 'High' : l === 'medium' ? 'Medium' : 'Low';
+}
+
+function renderStop(item){
+  return `
+    <div class="stop">
+      <h3 class="stop-name">${item.name}</h3>
+      <div class="stop-stat">${item.stat} · ${item.statLabel}</div>
+
+      <h3 class="section-h">Hazard exposure</h3>
+      ${item.hazards.map(h => `
+        <div class="hazard-row">
+          <div class="hazard-name">${h.name}</div>
+          <span class="pill ${h.level}">${levelLabel(h.level)}</span>
+          <div class="hazard-note">${h.note}</div>
+        </div>
+      `).join('')}
+
+      <div class="twocol">
+        <div>
+          <div class="metric-label">Criticality</div>
+          <div class="metric-value">${item.criticality}</div>
+        </div>
+        <div>
+          <div class="metric-label">Route substitutability</div>
+          <div class="metric-value">${item.substitutability}</div>
+        </div>
+      </div>
+
+      <h3 class="section-h">Recommended resilience strategies</h3>
+      <ul class="reco">
+        ${item.recos.map(r => `<li>${r}</li>`).join('')}
+      </ul>
+    </div>
+  `;
+}
+
+function assessRoute(){
+  const fromName = fromSelect.value;
+  const toName = toSelect.value;
+  const result = getRoute(fromName, toName);
+
+  updateMap(fromName, toName, result.path);
+
+  let pathHtml = `
+    <div class="route-path">
+      <span class="route-node origin">${fromName}</span>
+      ${result.path.map(id => `<span class="route-chevron">&#8594;</span><span class="route-node">${data.find(d => d.id === id).name}</span>`).join('')}
+      <span class="route-chevron">&#8594;</span>
+      <span class="route-node dest">${toName}</span>
+    </div>
+  `;
+
+  if (result.path.length === 0){
+    panelEl.innerHTML = pathHtml + `<div class="no-chokepoint">${result.note || "No chokepoint from this study's five lies on this route."}</div>`;
+    return;
+  }
+
+  let stopsHtml = result.path.map(id => renderStop(data.find(d => d.id === id))).join('');
+  let noteHtml = result.note ? `<div class="no-chokepoint">${result.note}</div>` : '';
+
+  panelEl.innerHTML = pathHtml + noteHtml + stopsHtml;
+}
+
+assessBtn.addEventListener('click', assessRoute);
+populateSelects();
+assessRoute();
+</script>
+</body>
+</html>
