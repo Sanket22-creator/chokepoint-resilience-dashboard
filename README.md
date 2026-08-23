@@ -26,7 +26,8 @@ route.
 
 ## Files
 
-- `index.html` — the entire app (HTML/CSS/JS + D3.js map, loaded via CDN).
+- `index.html` — the entire app (HTML/CSS/JS + Chart.js chart and D3.js map,
+  loaded via CDN).
   No build step, no dependencies to install.
 
 ## Running it locally

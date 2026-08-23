@@ -56,6 +56,19 @@
     margin:0 0 44px;
   }
 
+  .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;}
+  @media (max-width:760px){.kpi-row{grid-template-columns:repeat(2,1fr);}}
+  .kpi-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px;}
+  .kpi-value{font-family:'Fraunces',serif;font-weight:600;font-size:26px;color:var(--ink);line-height:1.1;}
+  .kpi-label{font-size:11.5px;color:var(--text-muted);margin-top:6px;line-height:1.4;}
+  .overview-panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:24px;margin-bottom:28px;}
+  .overview-title{font-family:'Fraunces',serif;font-weight:600;font-size:16px;margin:0 0 4px;}
+  .overview-sub{font-size:12.5px;color:var(--text-muted);margin:0 0 18px;}
+  .chart-wrap{position:relative;height:260px;}
+  .chart-legend-row{display:flex;flex-wrap:wrap;gap:14px;margin-top:12px;font-size:11.5px;color:var(--text-muted);}
+  .chart-legend-row span{display:flex;align-items:center;gap:5px;}
+  .legend-dot{width:9px;height:9px;border-radius:2px;display:inline-block;}
+
   /* tabs */
   .tabs{display:flex;gap:4px;margin-bottom:24px;border-bottom:1px solid var(--line);}
   .tab{
@@ -102,6 +115,30 @@
     color:var(--text-muted);
     margin-top:2px;
   }
+
+  .tradeoff-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:20px 0;}
+  @media (max-width:640px){.tradeoff-grid{grid-template-columns:1fr;}}
+  .tradeoff-col{border-radius:10px;padding:16px;}
+  .tradeoff-col.stay{background:var(--copper-bg);}
+  .tradeoff-col.substitute{background:var(--teal-bg);}
+  .tradeoff-col h4{margin:0 0 10px;font-size:12.5px;text-transform:uppercase;letter-spacing:.04em;font-weight:600;}
+  .tradeoff-col.stay h4{color:var(--copper);}
+  .tradeoff-col.substitute h4{color:var(--teal);}
+  .tradeoff-col ul{margin:0;padding:0;list-style:none;}
+  .tradeoff-col li{position:relative;padding:0 0 0 16px;margin-bottom:8px;font-size:13px;line-height:1.45;color:var(--ink);}
+  .tradeoff-col li::before{content:"-";position:absolute;left:0;}
+  .tradeoff-note{font-size:12.5px;color:var(--text-muted);margin-top:14px;padding-top:14px;border-top:1px solid rgba(0,0,0,0.06);}
+
+  .status-box{border-radius:10px;padding:16px;margin-top:16px;border:1px solid transparent;}
+  .status-box.active{background:var(--copper-bg);border-color:rgba(168,90,45,0.25);}
+  .status-box.structural{background:var(--teal-bg);border-color:rgba(47,113,102,0.25);}
+  .status-box.stale{background:var(--amber-bg);border-color:rgba(169,130,47,0.3);}
+  .status-badge{display:inline-flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:3px 9px;border-radius:999px;margin-bottom:10px;}
+  .status-badge.active{background:var(--copper);color:#fff;}
+  .status-badge.structural{background:var(--teal);color:#fff;}
+  .status-badge.stale{background:var(--amber);color:#fff;}
+  .status-text{font-size:13px;line-height:1.5;color:var(--ink);}
+  .status-asof{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-muted);margin-top:8px;}
 
   /* route form */
   .route-form{
@@ -398,6 +435,20 @@
   <h1>Where the world's oil is most exposed</h1>
   <p class="lede">Choose an origin and destination country to see which of the five chokepoints studied in this thesis lie on that route, and the resilience strategies the framework suggests for it.</p>
 
+  <div class="kpi-row">
+    <div class="kpi-card"><div class="kpi-value">5</div><div class="kpi-label">Chokepoints assessed</div></div>
+    <div class="kpi-card"><div class="kpi-value">3</div><div class="kpi-label">Hazard categories tracked</div></div>
+    <div class="kpi-card"><div class="kpi-value">23.2M</div><div class="kpi-label">b/d - largest single chokepoint (Malacca, 1H25)</div></div>
+    <div class="kpi-card"><div class="kpi-value">-55%</div><div class="kpi-label">Largest peak-to-trough decline (Bab el-Mandeb, 2023-2024)</div></div>
+  </div>
+
+  <div class="overview-panel">
+    <h3 class="overview-title">Transit volume by chokepoint, 2020-1H25</h3>
+    <p class="overview-sub">Million barrels per day. Source: EIA (2026).</p>
+    <div class="chart-wrap"><canvas id="overviewChart"></canvas></div>
+    <div class="chart-legend-row" id="overviewLegend"></div>
+  </div>
+
   <div class="tabs" role="tablist" aria-label="View mode">
     <button class="tab" id="tabRoute" role="tab" aria-selected="true">Route assessor</button>
     <button class="tab" id="tabCompare" role="tab" aria-selected="false">Full comparison</button>
@@ -434,6 +485,7 @@
 
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
 <script>
@@ -596,6 +648,19 @@ const chokeLL = {
   hormuz: [56.3, 26.5], malacca: [101.4, 2.5], babelmandeb: [43.4, 12.6], suez: [32.3, 30.6], danish: [12.6, 55.7]
 };
 
+data.forEach(item => {
+  item.tradeoff = {
+    stay: [`Continue using ${item.name} while accepting its highest-rated exposure.`, 'Shorter routing generally reduces fuel, time, and coordination costs.', 'Disruption can create sudden delays, insurance pressure, and downstream shortages.'],
+    substitute: ['Use available rerouting, buffering, or compliant counterparties where physical diversion is limited.', 'Expect higher freight, inventory, or compliance costs for the resilience measure.', 'Lower concentration of risk improves delivery predictability during disruption.'],
+    note: `Resilience should balance the direct cost of ${item.name} exposure against the cost and feasibility of substitution.`
+  };
+  item.currentStatus = {
+    type: item.hazards.some(h => h.level === 'high') ? 'active' : 'structural',
+    asOf: 'Most recent data reviewed in this study',
+    text: `The assessment reflects the structural and operational exposure documented for ${item.name}. Verify current advisories before using it for a live operational decision.`
+  };
+});
+
 let projection = null;
 let mapAvailable = typeof d3 !== 'undefined' && typeof topojson !== 'undefined';
 const mapSvg = mapAvailable ? d3.select('#mapSvg') : null;
@@ -715,6 +780,26 @@ function renderStop(item){
       <ul class="reco">
         ${item.recos.map(r => `<li>${r}</li>`).join('')}
       </ul>
+
+      <h3 class="section-h">Route substitution trade-off</h3>
+      <div class="tradeoff-grid">
+        <div class="tradeoff-col stay">
+          <h4>Stay on route</h4>
+          <ul>${item.tradeoff.stay.map(s => `<li>${s}</li>`).join('')}</ul>
+        </div>
+        <div class="tradeoff-col substitute">
+          <h4>Substitute route</h4>
+          <ul>${item.tradeoff.substitute.map(s => `<li>${s}</li>`).join('')}</ul>
+        </div>
+      </div>
+      <p class="tradeoff-note">${item.tradeoff.note}</p>
+
+      <h3 class="section-h">Current situation</h3>
+      <div class="status-box ${item.currentStatus.type}">
+        <span class="status-badge ${item.currentStatus.type}">${item.currentStatus.type === 'active' ? 'Active as of most recent data' : 'Ongoing structural pattern'}</span>
+        <div class="status-text">${item.currentStatus.text}</div>
+        <div class="status-asof">${item.currentStatus.asOf}</div>
+      </div>
     </div>
   `;
 }
@@ -774,6 +859,31 @@ function renderCompare(){
   `;
 }
 
+function renderOverviewChart(){
+  if (typeof Chart === 'undefined') return;
+  const years = ['2020','2021','2022','2023','2024','1H25'];
+  const series = [
+    { label: 'Strait of Malacca', data: [22.8,22.1,23.0,24.0,22.5,23.2], color: '#2a78d6' },
+    { label: 'Strait of Hormuz', data: [19.2,19.7,21.9,21.8,20.7,20.9], color: '#eb6834' },
+    { label: 'Suez Canal + SUMED', data: [5.4,5.2,7.3,8.8,4.8,4.9], color: '#1baf7a' },
+    { label: 'Bab el-Mandeb', data: [5.7,6.0,8.0,9.3,4.1,4.2], color: '#eda100' },
+    { label: 'Danish Straits', data: [3.1,3.1,4.2,5.0,4.9,4.9], color: '#e87ba4' }
+  ];
+  new Chart(document.getElementById('overviewChart'), {
+    type: 'line',
+    data: { labels: years, datasets: series.map(s => ({ label: s.label, data: s.data, borderColor: s.color, backgroundColor: s.color, pointRadius: 3, borderWidth: 2, tension: 0.2 })) },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { title: { display: true, text: 'Million barrels per day' }, grid: { color: '#e1e0d9' } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+  document.getElementById('overviewLegend').innerHTML = series.map(s => `<span><span class="legend-dot" style="background:${s.color};"></span>${s.label}</span>`).join('');
+}
+
 const tabRoute = document.getElementById('tabRoute');
 const tabCompare = document.getElementById('tabCompare');
 const routeView = document.getElementById('routeView');
@@ -796,6 +906,7 @@ tabCompare.addEventListener('click', () => {
 assessBtn.addEventListener('click', assessRoute);
 populateSelects();
 assessRoute();
+renderOverviewChart();
 </script>
 </body>
 </html>
