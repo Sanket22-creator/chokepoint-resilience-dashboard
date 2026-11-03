@@ -15,9 +15,12 @@ route.
 
 ## Status / what's real vs. illustrative
 
-- **Real, verified data**: chokepoint transit volumes (EIA, 2026), hazard
-  descriptions, and recommendations are grounded in the thesis's literature
-  review (see Chapter 2).
+- **Real, verified data**: chokepoint transit volumes (EIA, 2026; through
+  1H25), hazard descriptions, and recommendations are grounded in the thesis's
+  literature review (see Chapter 2).
+- **Data freshness**: this is a curated research snapshot, not a live feed.
+  Verify current advisories and market data before making operational
+  decisions.
 - **Curated, not live**: country-to-chokepoint routing is a hand-built rule
   table for ~15 major countries, not a live shipping/geocoding API. See the
   `routeRules` object in `index.html`.

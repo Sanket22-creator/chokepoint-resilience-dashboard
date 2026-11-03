@@ -65,6 +65,7 @@
   .overview-title{font-family:'Fraunces',serif;font-weight:600;font-size:16px;margin:0 0 4px;}
   .overview-sub{font-size:12.5px;color:var(--text-muted);margin:0 0 18px;}
   .chart-wrap{position:relative;height:260px;}
+  .chart-fallback{margin:0;padding:72px 16px;text-align:center;color:var(--text-muted);font-size:13px;}
   .chart-legend-row{display:flex;flex-wrap:wrap;gap:14px;margin-top:12px;font-size:11.5px;color:var(--text-muted);}
   .chart-legend-row span{display:flex;align-items:center;gap:5px;}
   .legend-dot{width:9px;height:9px;border-radius:2px;display:inline-block;}
@@ -434,6 +435,11 @@
   <div class="eyebrow">Thesis tool — chokepoint resilience framework</div>
   <h1>Where the world's oil is most exposed</h1>
   <p class="lede">Choose an origin and destination country to see which of the five chokepoints studied in this thesis lie on that route, and the resilience strategies the framework suggests for it.</p>
+  <div class="status-box stale" role="note">
+    <span class="status-badge stale">Data snapshot</span>
+    <div class="status-text">Transit volumes shown are for 2020–1H25. The supporting literature includes 2026 sources; this dashboard is curated for thesis analysis, not a live operational feed.</div>
+    <div class="status-asof">Verify current advisories and market data before making operational decisions.</div>
+  </div>
 
   <div class="kpi-row">
     <div class="kpi-card"><div class="kpi-value">5</div><div class="kpi-label">Chokepoints assessed</div></div>
@@ -445,7 +451,7 @@
   <div class="overview-panel">
     <h3 class="overview-title">Transit volume by chokepoint, 2020-1H25</h3>
     <p class="overview-sub">Million barrels per day. Source: EIA (2026).</p>
-    <div class="chart-wrap"><canvas id="overviewChart"></canvas></div>
+    <div class="chart-wrap"><canvas id="overviewChart" aria-label="Transit volume trend chart"></canvas></div>
     <div class="chart-legend-row" id="overviewLegend"></div>
   </div>
 
@@ -472,7 +478,7 @@
       <svg id="mapSvg" viewBox="0 0 900 460" role="img" aria-label="World map showing the assessed shipping route"></svg>
     </div>
 
-    <div class="panel" id="panel">
+    <div class="panel" id="panel" aria-live="polite">
       <p class="placeholder">Select an origin and destination, then choose "Assess route" to see the chokepoints on this path.</p>
     </div>
   </div>
@@ -618,6 +624,7 @@ const routeRules = {
   "baltic|south_asia":     { path: ["danish"], note: "Typically continues via Cape of Good Hope, avoiding Suez inspection risk." },
   "baltic|atlantic_americas": { path: ["danish"], note: null },
   "atlantic_africa|europe":{ path: [], note: "No chokepoint from this study's five lies on this direct Atlantic route." },
+  "atlantic_africa|atlantic_americas": { path: [], note: "Direct Atlantic crossing; no chokepoint from this study's five applies." },
   "atlantic_africa|east_asia": { path: [], note: "Typically routed via the Cape of Good Hope; outside this study's five chokepoints." },
   "atlantic_africa|south_asia": { path: [], note: "Typically routed via the Cape of Good Hope; outside this study's five chokepoints." },
   "atlantic_americas|europe": { path: [], note: "Direct Atlantic crossing; no chokepoint from this study's five applies." },
@@ -656,7 +663,7 @@ data.forEach(item => {
   };
   item.currentStatus = {
     type: item.hazards.some(h => h.level === 'high') ? 'active' : 'structural',
-    asOf: 'Most recent data reviewed in this study',
+    asOf: 'Assessment snapshot: 1H25 transit volumes and 2026 literature sources',
     text: `The assessment reflects the structural and operational exposure documented for ${item.name}. Verify current advisories before using it for a live operational decision.`
   };
 });
@@ -860,7 +867,10 @@ function renderCompare(){
 }
 
 function renderOverviewChart(){
-  if (typeof Chart === 'undefined') return;
+  if (typeof Chart === 'undefined'){
+    document.querySelector('.chart-wrap').innerHTML = '<p class="chart-fallback">Trend chart unavailable because the chart library could not be loaded. Route assessment remains available.</p>';
+    return;
+  }
   const years = ['2020','2021','2022','2023','2024','1H25'];
   const series = [
     { label: 'Strait of Malacca', data: [22.8,22.1,23.0,24.0,22.5,23.2], color: '#2a78d6' },
